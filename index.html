@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Artist Profile</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Deep Blue & Vibrant Orange -->
+    <!-- Application Structure Plan: A single-page portfolio with a two-part structure: a landing page with a 2D avatar intro and a main content page. The landing page uses simple HTML/CSS to display a stylized character and a button, which creates an engaging and memorable first impression. The transition to the main content page (the interactive resume) is now user-controlled via an "Explore" button. This structure prioritizes user engagement and interactive storytelling by starting with an impactful visual and then presenting the detailed information. -->
+    <!-- Visualization & Content Choices: The main content retains the interactive, tabbed skill lists and a timeline for work experience to make information digestible. The new landing page uses simple HTML/CSS shapes to represent a 2D avatar, making the code lightweight and reliable. An interactive button handles the page transition. All other content and UI elements are handled with structured HTML and Tailwind CSS, avoiding non-standard libraries and ensuring full responsiveness. The "AI Resume Feedback" feature now uses a Chart.js radial chart and a concise text summary to present AI analysis of the profile, making it visually appealing and quick to read. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1e293b; /* A deep blue for text */
+            background-color: #f0f4f8; /* A light blue-gray background */
+            background-image: linear-gradient(to right, rgba(209, 213, 219, 0.5) 1px, transparent 1px), linear-gradient(to bottom, rgba(209, 213, 219, 0.5) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .skill-tab.active {
+            background-color: #f97316; /* A vibrant orange */
+            color: #ffffff;
+        }
+        .modal-backdrop {
+            transition: opacity 0.3s ease-in-out;
+        }
+        .modal-content {
+            transition: transform 0.3s ease-in-out;
+        }
+        #landing-page {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background-color: #1e293b;
+            color: #f0f4f8;
+            transition: opacity 1s ease-in-out;
+            z-index: 100;
+            overflow: hidden; /* Hide overflow from animations */
+        }
+        #landing-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 0;
+        }
+        .slideshow-container {
+            position: relative;
+            max-width: 600px;
+            margin: auto;
+        }
+        .mySlides {
+            display: none;
+        }
+        .slideshow-img {
+            width: 100%;
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        /* Avatar styling */
+        .avatar {
+            width: 150px;
+            height: 200px;
+            position: relative;
+            transform: scale(0.8);
+        }
+        .avatar-body {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 120px;
+            background-color: #3b82f6; /* Blue shirt */
+            border-radius: 15px 15px 0 0;
+        }
+        .avatar-head {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background-color: #f9a8d4; /* Pinkish skin tone */
+            border-radius: 50%;
+            animation: bow 2s infinite ease-in-out;
+        }
+        .avatar-hair {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 70px;
+            height: 35px;
+            background-color: #f59e0b;
+            border-radius: 35px 35px 0 0;
+        }
+        .avatar-arm {
+            position: absolute;
+            width: 25px;
+            height: 60px;
+            background-color: #3b82f6;
+            border-radius: 10px;
+            bottom: 60px;
+            transform-origin: top;
+            animation: arm-bow 2s infinite ease-in-out;
+        }
+        .avatar-arm.left {
+            left: 10px;
+            transform: rotate(30deg);
+        }
+        .avatar-arm.right {
+            right: 10px;
+            transform: rotate(-30deg);
+        }
+
+        /* Facial features */
+        .avatar-eye {
+            position: absolute;
+            top: 20px;
+            width: 8px;
+            height: 8px;
+            background-color: #1e293b;
+            border-radius: 50%;
+        }
+        .avatar-eye.left {
+            left: 12px;
+        }
+        .avatar-eye.right {
+            right: 12px;
+        }
+        .avatar-nose {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 5px;
+            background-color: #f59e0b;
+            border-radius: 5px 5px 0 0;
+        }
+        .avatar-mouth {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 10px;
+            background-color: #ef4444; /* Red lips */
+            border-radius: 0 0 10px 10px;
+            transform-origin: bottom;
+            animation: smile 2s infinite ease-in-out;
+        }
+
+        @keyframes bow {
+            0%, 100% { transform: translateX(-50%) rotate(0deg); }
+            50% { transform: translateX(-50%) rotate(15deg); }
+        }
+
+        @keyframes arm-bow {
+            0%, 100% { transform: rotate(30deg); }
+            50% { transform: rotate(10deg); }
+        }
+        .avatar-arm.right {
+            animation-name: arm-bow-right;
+        }
+
+        @keyframes arm-bow-right {
+            0%, 100% { transform: rotate(-30deg); }
+            50% { transform: rotate(-10deg); }
+        }
+
+        @keyframes smile {
+            0%, 100% { height: 10px; }
+            50% { height: 5px; }
+        }
+
+        .sticky-nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 50;
+            background-color: #ffffff;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1rem 0;
+            display: flex;
+            justify-content: center;
+        }
+        .sticky-nav.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+        .nav-link {
+            transition: transform 0.2s ease-in-out, color 0.2s ease-in-out;
+            display: flex;
+            align-items: center;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+        }
+        .nav-link:hover {
+            transform: translateY(-2px);
+            color: #f97316;
+        }
+        .nav-link.active {
+            color: #f97316;
+            border-bottom-color: #f97316;
+            font-weight: 600;
+        }
+
+        .main-title-container {
+            transition: transform 0.2s ease-in-out;
+            text-align: center;
+            margin-left: auto;
+            margin-right: auto;
+            display: block;
+            width: fit-content;
+        }
+        .main-title-container:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="landing-page" class="flex flex-col items-center justify-center text-center">
+        <canvas id="landing-canvas"></canvas>
+        <div class="relative z-10 p-4">
+            <div class="flex flex-col items-center mb-8">
+                <div class="avatar">
+                    <div class="avatar-head">
+                        <div class="avatar-hair"></div>
+                        <div class="avatar-eye left"></div>
+                        <div class="avatar-eye right"></div>
+                        <div class="avatar-nose"></div>
+                        <div class="avatar-mouth"></div>
+                    </div>
+                    <div class="avatar-body"></div>
+                    <div class="avatar-arm left"></div>
+                    <div class="avatar-arm right"></div>
+                </div>
+            </div>
+            <h2 class="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white mb-4">
+                Welcome
+            </h2>
+            <p class="text-lg sm:text-xl md:text-2xl text-gray-300 mb-8">
+                Let's explore Priyanshu's experience journey with me.
+            </p>
+            <button id="explore-button" class="bg-orange-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-orange-600 transition-colors duration-300">
+                Explore
+            </button>
+        </div>
+    </div>
+
+    <div id="main-page" class="opacity-0 pointer-events-none">
+        
+        <div id="sticky-nav" class="sticky-nav">
+            <a href="#profile-section" class="nav-link" data-section="profile-section">
+                <span class="text-orange-500 mr-2">&#x1F464;</span> Profile
+            </a>
+            <a href="#experience-section" class="nav-link" data-section="experience-section">
+                <span class="text-orange-500 mr-2">&#x1F4BC;</span> Work Experience
+            </a>
+            <a href="#skills-section" class="nav-link" data-section="skills-section">
+                <span class="text-orange-500 mr-2">&#x2728;</span> Skills
+            </a>
+            <a href="#education-section" class="nav-link" data-section="education-section">
+                <span class="text-orange-500 mr-2">&#x1F393;</span> Education
+            </a>
+            <a href="#attributes-section" class="nav-link" data-section="attributes-section">
+                <span class="text-orange-500 mr-2">&#x1F3A8;</span> Attributes
+            </a>
+            <a href="#portfolio-section" class="nav-link" data-section="portfolio-section">
+                <span class="text-orange-500 mr-2">&#x1F4A5;</span> Portfolio
+            </a>
+            <a href="#contact-section" class="nav-link" data-section="contact-section">
+                <span class="text-orange-500 mr-2">&#x1F4E7;</span> Contact
+            </a>
+        </div>
+        
+
+        <div id="app" class="container mx-auto p-4 sm:p-6 md:p-8 max-w-5xl">
+
+            <header class="text-center py-12 md:py-20 border-b border-gray-300">
+                <h1 class="text-5xl md:text-6xl font-bold text-slate-900 tracking-tight">Priyanshu Raj</h1>
+                <p class="mt-4 text-xl md:text-2xl text-orange-600">3D Artist</p>
+            </header>
+
+            <main>
+                <section id="profile-section" class="py-12 md:py-16">
+                    <div class="main-title-container">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-6 flex items-center justify-center space-x-3 hover:scale-105 transition-transform duration-200">
+                            <span class="text-orange-500">
+                                &#x1F464;
+                            </span>
+                            <span>Profile</span>
+                        </h2>
+                    </div>
+                    <p id="profile-text" class="text-center max-w-3xl mx-auto text-lg leading-relaxed text-slate-600">
+                        A 3D Artist with a foundational understanding of environment and prop creation. My skills encompass a wide range of 3D art disciplines, including hard surface and soft surface modeling, as well as exterior visualizations, including detailed dollhouses created with depth maps. I am actively developing my expertise in <strong>Unreal Engine</strong>, where I am building a portfolio that showcases my abilities in environment art, animation, and visual storytelling.
+                    </p>
+                    <div class="flex flex-col items-center mt-6 space-y-4">
+                        <button id="get-feedback-button" class="bg-orange-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-orange-600 transition-colors duration-300">
+                            ✨ Get AI Resume Feedback
+                        </button>
+                        <button id="tts-button" class="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-blue-600 transition-colors duration-300">
+                            ✨ Listen to My Profile
+                        </button>
+                    </div>
+                    <div id="feedback-container" class="mt-8 max-w-3xl mx-auto p-6 bg-white rounded-lg shadow hidden">
+                        <div class="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-8">
+                            <div class="w-full md:w-1/2 chart-container">
+                                <canvas id="strengths-chart"></canvas>
+                            </div>
+                            <div class="w-full md:w-1/2">
+                                <p id="feedback-summary" class="text-slate-700 leading-relaxed font-semibold italic"></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="experience-section" class="py-12 md:py-16 bg-white rounded-2xl shadow-lg">
+                    <div class="main-title-container">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-10 flex items-center justify-center space-x-3 hover:scale-105 transition-transform duration-200">
+                            <span class="text-orange-500">
+                                &#x1F4BC;
+                            </span>
+                            <span>Work Experience</span>
+                        </h2>
+                    </div>
+                    <div class="space-y-10 max-w-2xl mx-auto px-4">
+                        <!-- Most Recent -->
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-gray-200 rounded-full"></div>
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">3D Generalist (Art Attack Animation)</h3>
+                                <p class="text-slate-600 text-sm">New Delhi | July 2025 - Present</p>
+                                <p class="mt-2 text-slate-500">Working as a 3D Generalist, responsible for a variety of tasks across the 3D production pipeline, including modeling, texturing, and rendering for different projects.</p>
+                            </div>
+                        </div>
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-gray-200 rounded-full"></div>
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">3D Modeler (VReal)</h3>
+                                <p class="text-slate-600 text-sm">Finland | Dec 2024 - June 2025</p>
+                                <p class="mt-2 text-slate-500">Freelancer tasked with creating detailed 3D dollhouses, utilizing depth maps and advanced techniques to be used in virtual tours for a realistic and immersive experience.</p>
+                            </div>
+                        </div>
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-gray-200 rounded-full"></div>
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">3D Artist Intern (Tagglabs)</h3>
+                                <p class="text-slate-600 text-sm">Gurugram | Feb 2025 - April 2025</p>
+                                <p class="mt-2 text-slate-500">Modeled and textured optimized 3D assets for projects used in Unreal Engine and TwinMotion, with a focus on creating high-quality models for clients like DRDO.</p>
+                            </div>
+                        </div>
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-gray-200 rounded-full"></div>
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">3D Artist (Nexinven)</h3>
+                                <p class="text-slate-600 text-sm">Odisha | Aug 2024 - Dec 2024</p>
+                                <p class="mt-2 text-slate-500">Freelance artist specializing in creating realistic product visualizations for various brands, focusing on showcasing products through compelling 3D animations and renderings.</p>
+                            </div>
+                        </div>
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">3D Artist Intern (Flipspaces)</h3>
+                                <p class="text-slate-600 text-sm">Mumbai | May 2024 - Oct 2024</p>
+                                <p class="mt-2 text-slate-500">Worked at an interior design firm, responsible for modeling a wide range of furniture and fixtures for architectural visualization projects.</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="skills-section" class="py-12 md:py-16">
+                    <div class="main-title-container">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-10 flex items-center justify-center space-x-3 hover:scale-105 transition-transform duration-200">
+                            <span class="text-orange-500">
+                                &#x2728;
+                            </span>
+                            <span>Software Proficiency & Skills</span>
+                        </h2>
+                    </div>
+                    <div class="w-full max-w-2xl mx-auto bg-white p-6 rounded-2xl shadow-lg">
+                        <div class="flex justify-center border-b border-gray-300 mb-8 space-x-2 sm:space-x-4">
+                            <button data-tab="modeling" class="skill-tab text-sm sm:text-base px-4 py-2.5 font-semibold rounded-t-lg transition-colors duration-200 active">Software</button>
+                            <button data-tab="environments" class="skill-tab text-sm sm:text-base px-4 py-2.5 font-semibold rounded-t-lg transition-colors duration-200">Design Skills</button>
+                        </div>
+                        <div id="skill-content" class="px-4">
+                            <div id="modeling-content" class="skill-content-panel">
+                                <p class="text-center text-slate-600 mb-6">Proficient in a variety of industry-standard 3D software.</p>
+                                <ul class="space-y-3 text-center grid grid-cols-2 sm:grid-cols-3 gap-4">
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F300; Blender</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F3AE; Unreal Engine</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F529; 3Ds Max</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F3A8; Maya</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F399; Substance Painter</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F3DB; Zbrush</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F455; Marvellous Designer</li>
+                                </ul>
+                            </div>
+                            <div id="environments-content" class="skill-content-panel hidden">
+                                <p class="text-center text-slate-600 mb-6">Key design competencies that define my artistic abilities.</p>
+                                <ul class="space-y-3 text-center grid grid-cols-1 gap-4">
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F528; Hard surface & Soft surface Modelling</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F3A4; Texturing</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F3D9; Environment Design</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F5BC; Product Visualization</li>
+                                    <li class="p-3 bg-gray-100 rounded-lg text-slate-700">&#x1F3A6; Animation</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                
+                <section id="education-section" class="py-12 md:py-16 bg-white rounded-2xl shadow-lg">
+                    <div class="main-title-container">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-10 flex items-center justify-center space-x-3 hover:scale-105 transition-transform duration-200">
+                            <span class="text-orange-500">
+                                &#x1F393;
+                            </span>
+                            <span>Education</span>
+                        </h2>
+                    </div>
+                     <div class="space-y-10 max-w-2xl mx-auto px-4">
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-gray-200 rounded-full"></div>
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">B.Sc Animation & Visual Graphics</h3>
+                                <p class="text-slate-600 text-sm">Amity University Rajasthan | 2022-2025</p>
+                                <p class="mt-2 text-slate-500">8.78 CGPA</p>
+                            </div>
+                        </div>
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="absolute left-1/2 -translate-x-1/2 top-0 h-full w-0.5 bg-gray-200 rounded-full"></div>
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">Higher Secondary Education</h3>
+                                <p class="text-slate-600 text-sm">Devasthaliye Vidyapeeth, Motihari | 2021-2022</p>
+                                <p class="mt-2 text-slate-500">85%</p>
+                            </div>
+                        </div>
+                        <div class="relative grid grid-cols-[auto_1fr] gap-x-4">
+                            <div class="relative col-start-1 col-end-2">
+                                <div class="relative z-10 flex items-center justify-center h-4 w-4 bg-orange-500 rounded-full shadow-md"></div>
+                            </div>
+                            <div class="col-start-2 col-end-3 pl-2">
+                                <h3 class="font-bold text-xl text-slate-900">Secondary Education</h3>
+                                <p class="text-slate-600 text-sm">Shantiniketan Jubilee School, Motihari | 2020-2021</p>
+                                <p class="mt-2 text-slate-500">81.2%</p>
+                            </div>
+                        </div>
+                     </div>
+                </section>
+                
+                <section id="attributes-section" class="py-12 md:py-16">
+                    <div class="main-title-container">
+                         <h2 class="text-3xl font-bold text-slate-900 mb-10 flex items-center justify-center space-x-3 hover:scale-105 transition-transform duration-200">
+                            <span class="text-orange-500">
+                                &#x1F3A8;
+                            </span>
+                            <span>Key Attributes</span>
+                        </h2>
+                    </div>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 text-center">
+                         <div class="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-300">
+                             <h3 class="font-semibold text-lg text-orange-600 mb-2">Rapid Learner</h3>
+                             <p class="text-slate-600">Quickly adapts to new disciplines, software, and technologies to meet project demands.</p>
+                         </div>
+                         <div class="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-300">
+                             <h3 class="font-semibold text-lg text-orange-600 mb-2">Strong Artistic Eye</h3>
+                             <p class="text-slate-600">Combines technical skills with a passion for aesthetics to create visually compelling work.</p>
+                         </div>
+                         <div class="bg-white p-6 rounded-2xl shadow-lg hover:shadow-xl hover:bg-gray-50 transition-all duration-300">
+                             <h3 class="font-semibold text-lg text-orange-600 mb-2">Committed to Quality</h3>
+                             <p class="text-slate-600">Dedicated to delivering high-quality, detailed models that exceed client expectations.</p>
+                         </div>
+                     </div>
+                </section>
+
+                <section id="portfolio-section" class="py-12 md:py-16 bg-white rounded-2xl shadow-lg">
+                    <div class="main-title-container">
+                         <h2 class="text-3xl font-bold text-slate-900 mb-10 flex items-center justify-center space-x-3 hover:scale-105 transition-transform duration-200">
+                            <span class="text-orange-500">
+                                &#x1F4A5;
+                            </span>
+                            <span>Portfolio</span>
+                        </h2>
+                    </div>
+                    <p class="text-center max-w-3xl mx-auto text-lg leading-relaxed text-slate-600 mb-6">
+                        Explore my creative work, projects, and animations on my Behance profile.
+                    </p>
+                     <div class="text-center">
+                        <a href="https://www.behance.net/rajriyansh" target="_blank" class="inline-block bg-orange-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-orange-600 transition-colors duration-300">
+                            View My Behance Profile
+                        </a>
+                     </div>
+                </section>
+
+                <section id="contact-section" class="py-12 md:py-16 bg-white rounded-2xl shadow-lg mb-8">
+                    <div class="main-title-container">
+                        <h2 class="text-3xl font-bold text-slate-900 mb-6 flex items-center justify-center space-x-3 hover:scale-105 transition-transform duration-200">
+                            <span class="text-orange-500">
+                                &#x1F4E7;
+                            </span>
+                            <span>Contact</span>
+                        </h2>
+                    </div>
+                    <div class="flex flex-col sm:flex-row justify-center items-center space-y-4 sm:space-y-0 sm:space-x-8 text-slate-600 font-semibold">
+                        <p class="flex items-center space-x-2">
+                            <span>&#x1F4F1;</span> <span>9939516310</span>
+                        </p>
+                        <p class="flex items-center space-x-2">
+                            <span>&#x2709;</span> <span>rajpriyanz20@gmail.com</span>
+                        </p>
+                        <a href="https://www.linkedin.com/in/rajpriyanshuraj/" target="_blank" class="flex items-center space-x-2 text-blue-500 hover:text-blue-700 transition-colors">
+                            <span>&#x1F517;</span> <span>LinkedIn Profile</span>
+                        </a>
+                    </div>
+                     <div class="text-center mt-8">
+                        <a href="mailto:rajpriyanz20@gmail.com" class="inline-block bg-orange-500 text-white font-bold py-3 px-8 rounded-lg shadow-md hover:bg-orange-600 transition-colors duration-300">
+                            Let's Connect
+                        </a>
+                     </div>
+                </section>
+            </main>
+
+            <footer class="text-center py-8 mt-12 border-t border-gray-300">
+                <p class="text-slate-500">Ready to bring your creative vision to life.</p>
+            </footer>
+
+        </div>
+    </div>
+
+    <div id="project-modal" class="modal-backdrop fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 opacity-0 pointer-events-none">
+        <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 transform scale-95">
+            <h3 id="modal-title" class="text-2xl font-bold text-slate-900 mb-4"></h3>
+            <p id="modal-description" class="text-slate-600 mb-6"></p>
+            <button id="modal-close-btn" class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors duration-300">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // API key should be provided by the runtime environment
+        const apiKey = "";
+
+        async function fetchWithExponentialBackoff(url, options, retries = 3, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.status === 429 && i < retries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // Exponential backoff
+                        continue;
+                    }
+                    return response;
+                } catch (error) {
+                    if (i < retries - 1) {
+                        await new Promise(resolve => setTimeout(resolve, delay));
+                        delay *= 2; // Exponential backoff
+                        continue;
+                    }
+                    throw error;
+                }
+            }
+        }
+
+        let strengthsChart; // A variable to hold the chart instance
+
+        async function getFeedback() {
+            const profileText = document.getElementById('profile-text').textContent;
+            const feedbackContainer = document.getElementById('feedback-container');
+            const feedbackSummary = document.getElementById('feedback-summary');
+            const getFeedbackButton = document.getElementById('get-feedback-button');
+            const canvas = document.getElementById('strengths-chart');
+            const ctx = canvas.getContext('2d');
+
+            getFeedbackButton.textContent = 'Analyzing...';
+            getFeedbackButton.disabled = true;
+            feedbackContainer.classList.remove('hidden');
+            feedbackSummary.textContent = 'Generating feedback...';
+
+            // Destroy the old chart if it exists
+            if (strengthsChart) {
+                strengthsChart.destroy();
+            }
+
+            try {
+                const prompt = `Critique the following 3D artist resume profile. Extract three key strengths (e.g., Modeling, Animation, Environment Art, Technical Skills, etc.) and give each a score from 7 to 10. Also, provide a brief 2-3 sentence summary of the profile's overall strength. Return the result as a JSON object with two keys: "summary" (string) and "strengths" (an array of objects with "label" and "score").
+                
+                Profile: "${profileText}"`;
+
+                const payload = {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: {
+                        responseMimeType: "application/json",
+                        responseSchema: {
+                            type: "OBJECT",
+                            properties: {
+                                "summary": { "type": "STRING" },
+                                "strengths": {
+                                    "type": "ARRAY",
+                                    "items": {
+                                        "type": "OBJECT",
+                                        "properties": {
+                                            "label": { "type": "STRING" },
+                                            "score": { "type": "INTEGER" }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                };
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+                const jsonText = result.candidates[0].content.parts[0].text;
+                const parsedJson = JSON.parse(jsonText);
+
+                feedbackSummary.textContent = parsedJson.summary;
+
+                const chartData = {
+                    labels: parsedJson.strengths.map(s => s.label),
+                    datasets: [{
+                        label: 'Profile Strengths',
+                        data: parsedJson.strengths.map(s => s.score),
+                        backgroundColor: [
+                            'rgba(249, 115, 22, 0.5)',
+                            'rgba(59, 130, 246, 0.5)',
+                            'rgba(245, 158, 11, 0.5)'
+                        ],
+                        borderColor: [
+                            'rgb(249, 115, 22)',
+                            'rgb(59, 130, 246)',
+                            'rgb(245, 158, 11)'
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+
+                strengthsChart = new Chart(ctx, {
+                    type: 'radar',
+                    data: chartData,
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                angleLines: {
+                                    color: 'rgba(209, 213, 219, 0.5)'
+                                },
+                                grid: {
+                                    color: 'rgba(209, 213, 219, 0.5)'
+                                },
+                                pointLabels: {
+                                    color: '#1e293b',
+                                    font: {
+                                        size: 14
+                                    }
+                                },
+                                suggestedMin: 0,
+                                suggestedMax: 10,
+                                ticks: {
+                                    display: false
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error fetching AI feedback:', error);
+                feedbackSummary.textContent = 'Failed to get feedback. Please try again later.';
+            } finally {
+                getFeedbackButton.textContent = '✨ Get AI Resume Feedback';
+                getFeedbackButton.disabled = false;
+            }
+        }
+
+        function base64ToArrayBuffer(base64) {
+            const binaryString = window.atob(base64);
+            const len = binaryString.length;
+            const bytes = new Uint8Array(len);
+            for (let i = 0; i < len; i++) {
+                bytes[i] = binaryString.charCodeAt(i);
+            }
+            return bytes.buffer;
+        }
+
+        function pcmToWav(pcmData, sampleRate) {
+            const dataLength = pcmData.length * 2;
+            const buffer = new ArrayBuffer(44 + dataLength);
+            const view = new DataView(buffer);
+
+            let offset = 0;
+
+            function writeString(str) {
+                for (let i = 0; i < str.length; i++) {
+                    view.setUint8(offset++, str.charCodeAt(i));
+                }
+            }
+
+            function writeUint32(val) {
+                view.setUint32(offset, val, true);
+                offset += 4;
+            }
+
+            function writeUint16(val) {
+                view.setUint16(offset, val, true);
+                offset += 2;
+            }
+
+            writeString('RIFF');
+            writeUint32(36 + dataLength);
+            writeString('WAVE');
+            writeString('fmt ');
+            writeUint32(16);
+            writeUint16(1); // PCM
+            writeUint16(1); // 1 channel
+            writeUint32(sampleRate);
+            writeUint32(sampleRate * 2); // Byte rate
+            writeUint16(2); // Block align
+            writeUint16(16); // Bits per sample
+            writeString('data');
+            writeUint32(dataLength);
+
+            const pcmView = new DataView(pcmData.buffer);
+            for (let i = 0; i < pcmData.length; i++, offset += 2) {
+                view.setInt16(offset, pcmData[i], true);
+            }
+
+            return new Blob([buffer], { type: 'audio/wav' });
+        }
+
+        async function getTTS() {
+            const profileText = document.getElementById('profile-text').textContent;
+            const ttsButton = document.getElementById('tts-button');
+            
+            ttsButton.textContent = 'Loading...';
+            ttsButton.disabled = true;
+
+            const audio = new Audio();
+            
+            try {
+                const payload = {
+                    contents: [{ parts: [{ text: profileText }] }],
+                    generationConfig: {
+                        responseModalities: ["AUDIO"],
+                        speechConfig: {
+                            voiceConfig: {
+                                prebuiltVoiceConfig: { voiceName: "Kore" }
+                            }
+                        }
+                    },
+                    model: "gemini-2.5-flash-preview-tts"
+                };
+
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=${apiKey}`;
+
+                const response = await fetchWithExponentialBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const result = await response.json();
+
+                const audioData = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+                const mimeType = result.candidates?.[0]?.content?.parts?.[0]?.inlineData?.mimeType;
+
+                if (audioData && mimeType && mimeType.startsWith("audio/")) {
+                    const sampleRateMatch = mimeType.match(/rate=(\d+)/);
+                    const sampleRate = sampleRateMatch ? parseInt(sampleRateMatch[1], 10) : 16000;
+                    
+                    const pcmData = base64ToArrayBuffer(audioData);
+                    const pcm16 = new Int16Array(pcmData);
+                    const wavBlob = pcmToWav(pcm16, sampleRate);
+                    const audioUrl = URL.createObjectURL(wavBlob);
+                    
+                    audio.src = audioUrl;
+                    audio.play();
+
+                    audio.onended = () => {
+                        URL.revokeObjectURL(audioUrl);
+                        ttsButton.textContent = '✨ Listen to My Profile';
+                        ttsButton.disabled = false;
+                    };
+                    
+                } else {
+                    throw new Error('Invalid audio data received from API.');
+                }
+            } catch (error) {
+                console.error('Error with TTS:', error);
+                ttsButton.textContent = 'Error playing audio';
+                ttsButton.disabled = false;
+                
+                setTimeout(() => {
+                    ttsButton.textContent = '✨ Listen to My Profile';
+                }, 3000);
+            }
+        }
+    
+        document.addEventListener('DOMContentLoaded', () => {
+            const landingPage = document.getElementById('landing-page');
+            const mainPage = document.getElementById('main-page');
+            const exploreButton = document.getElementById('explore-button');
+            const landingCanvas = document.getElementById('landing-canvas');
+            const ctx = landingCanvas.getContext('2d');
+            
+            let width = window.innerWidth;
+            let height = window.innerHeight;
+            let trails = [];
+            const maxTrails = 10;
+
+            function Trail(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.history = [];
+                this.color = color;
+                this.speedX = (Math.random() - 0.5) * 2;
+                this.speedY = (Math.random() - 0.5) * 2;
+            }
+
+            Trail.prototype.update = function() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                
+                this.history.push({ x: this.x, y: this.y });
+                if (this.history.length > 50) {
+                    this.history.shift();
+                }
+            };
+
+            Trail.prototype.draw = function() {
+                ctx.beginPath();
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                for (let i = 0; i < this.history.length; i++) {
+                    const pos = this.history[i];
+                    if (i === 0) {
+                        ctx.moveTo(pos.x, pos.y);
+                    } else {
+                        ctx.lineTo(pos.x, pos.y);
+                    }
+                }
+                ctx.stroke();
+            };
+
+            function initCanvas() {
+                landingCanvas.width = width;
+                landingCanvas.height = height;
+                trails = [];
+                for (let i = 0; i < maxTrails; i++) {
+                    const x = Math.random() * width;
+                    const y = Math.random() * height;
+                    trails.push(new Trail(x, y, '#f97316'));
+                }
+            }
+
+            function animateCanvas() {
+                ctx.fillStyle = 'rgba(30, 41, 59, 0.1)';
+                ctx.fillRect(0, 0, width, height);
+
+                trails.forEach(trail => {
+                    trail.update();
+                    trail.draw();
+                    
+                    // Bounce off edges
+                    if (trail.x < 0 || trail.x > width) trail.speedX *= -1;
+                    if (trail.y < 0 || trail.y > height) trail.speedY *= -1;
+                });
+                
+                requestAnimationFrame(animateCanvas);
+            }
+
+            window.addEventListener('resize', () => {
+                width = window.innerWidth;
+                height = window.innerHeight;
+                initCanvas();
+            });
+
+            initCanvas();
+            animateCanvas();
+
+            exploreButton.addEventListener('click', () => {
+                landingPage.style.opacity = '0';
+                setTimeout(() => {
+                    landingPage.style.display = 'none';
+                    mainPage.style.opacity = '1';
+                    mainPage.style.pointerEvents = 'auto';
+                    attachMainPageEventListeners();
+                }, 1000); // Wait for the fade-out to complete
+            });
+
+            function attachMainPageEventListeners() {
+                const skillTabs = document.querySelectorAll('.skill-tab');
+                const skillContentPanels = document.querySelectorAll('.skill-content-panel');
+                const getFeedbackButton = document.getElementById('get-feedback-button');
+                const ttsButton = document.getElementById('tts-button');
+                
+                getFeedbackButton.addEventListener('click', getFeedback);
+                ttsButton.addEventListener('click', getTTS);
+
+                skillTabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        const tabId = tab.dataset.tab;
+                        
+                        skillTabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+
+                        skillContentPanels.forEach(panel => {
+                            if (panel.id === `${tabId}-content`) {
+                                panel.classList.remove('hidden');
+                            } else {
+                                panel.classList.add('hidden');
+                            }
+                        });
+                    });
+                });
+
+                const projectCards = document.querySelectorAll('.project-card');
+                const modal = document.getElementById('project-modal');
+                const modalTitle = document.getElementById('modal-title');
+                const modalDescription = document.getElementById('modal-description');
+                const modalCloseBtn = document.getElementById('modal-close-btn');
+                const modalContent = document.querySelector('.modal-content');
+
+                const projectDetails = {
+                    dollhouses: {
+                        title: "Dollhouse Visualizations",
+                        description: "This project involves creating highly detailed miniature environments for virtual tours. By leveraging depth maps and advanced modeling techniques, the goal is to produce realistic and visually rich dollhouse scenes that capture a sense of scale and intricacy. This work was done as a freelancer for VReal."
+                    },
+                    animations: {
+                        title: "Product Animations",
+                        description: "This area of work focuses on creating smooth and polished animations for commercial products, including showcasing products through 3D visualization. The process includes modeling the product accurately, rigging it for movement, and animating it to showcase key features in a dynamic and engaging way. This includes freelance work for Nexinven."
+                    }
+                };
+
+                const openModal = (projectId) => {
+                    const details = projectDetails[projectId];
+                    if (!details) return;
+                    
+                    modalTitle.textContent = details.title;
+                    modalDescription.textContent = details.description;
+                    
+                    modal.classList.remove('opacity-0', 'pointer-events-none');
+                    modalContent.classList.remove('scale-95');
+                };
+
+                const closeModal = () => {
+                    modal.classList.add('opacity-0', 'pointer-events-none');
+                    modalContent.classList.add('scale-95');
+                };
+
+                projectCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        openModal(card.dataset.project);
+                    });
+                });
+
+                modalCloseBtn.addEventListener('click', closeModal);
+                modal.addEventListener('click', (e) => {
+                    if (e.target === modal) {
+                        closeModal();
+                    }
+                });
+
+                // Sticky nav logic
+                const stickyNav = document.getElementById('sticky-nav');
+                const sections = document.querySelectorAll('main section');
+                const navLinks = document.querySelectorAll('.nav-link');
+
+                window.addEventListener('scroll', () => {
+                    if (window.scrollY > 200) {
+                        stickyNav.classList.add('visible');
+                    } else {
+                        stickyNav.classList.remove('visible');
+                    }
+
+                    let current = '';
+                    sections.forEach(section => {
+                        const sectionTop = section.offsetTop;
+                        const sectionHeight = section.clientHeight;
+                        if (pageYOffset >= sectionTop - 100) {
+                            current = section.getAttribute('id');
+                        }
+                    });
+
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href').slice(1) === current) {
+                            link.classList.add('active');
+                        }
+                    });
+                });
+
+                navLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const targetId = e.currentTarget.getAttribute('href');
+                        const targetSection = document.querySelector(targetId);
+                        window.scrollTo({
+                            top: targetSection.offsetTop,
+                            behavior: 'smooth'
+                        });
+                    });
+                });
+            }
+        });
+    </script>
+</body>
+</html>
